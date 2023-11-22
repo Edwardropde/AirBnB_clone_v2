@@ -23,9 +23,7 @@ class User(BaseModel, Base):
         password (sqlalchemy String): user password
     """
     __tablename__ = "users"
-    places = relationship("Place", backref="user", cascade="delete")
     email = Column(String(128), nullable=False)
-    reviews = relationship("Review", backref="user", cascade="delete")
-    first_name = Column(String(128))
-    last_name = Column(String(128))
     password = Column(String(128), nullable=False)
+    first_name = Column(String(128), nullable=True)
+    last_name = Column(String(128), nullable=True)

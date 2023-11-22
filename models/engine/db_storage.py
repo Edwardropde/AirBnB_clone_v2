@@ -37,9 +37,6 @@ class DBStorage:
                                         pool_pre_ping=True)
         if getenv("HBNB_ENV") == "test":
             Base.metadata.drop_all(self.__engine)
-        Session = scoped_session(sessionmaker(
-            bind=self.__engine, expire_on_commit=False))
-        self.__session = Session()
 
     def all(self, cls=None):
         """
@@ -50,15 +47,18 @@ class DBStorage:
         Return:
             Dictionary queried classes in the <class name>.<obj id> = obj.
         """
-        if cls is None:
-            cls_list = [User, State, City, Place, Amenity, Review]
+        result = {}
+        if cls:
+            objects = self.__session.query(cls).all()
         else:
-            cls_list = [cls]
-        objs = {}
-        for cl in cls_list:
-            for obj in self.__session.query(cl):
-                objs['{}.{}'.format(type(obj).__name__, obj.id)] = obj
-        return objs
+            classes = [base_model.User, base_model.State, base_model.City,
+                        base_model.Amenity, base_model.Place, base_model.Review]
+            objects = []
+            for class_name in classes:
+                objects += self.__session.query(class_name).all()
+        for obj in objects:
+            key = "{}.{}".format(type(obj).__name__, obj.id)
+        return result
 
     def new(self, obj):
         """Add object to current database session"""

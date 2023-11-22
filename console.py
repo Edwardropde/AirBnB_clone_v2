@@ -11,6 +11,15 @@ from models.city import City
 from models.amenity import Amenity
 from models.place import Place
 from models.review import Review
+from dotenv import load_dotenv
+
+load_dotenv()
+
+hbnb_mysql_user = getenv("HBNB_MYSQL_USER")
+hbnb_mysql_pwd = getenv("HBNB_MYSQL_PWD")
+hbnb_mysql_host = getenv("HBNB_MYSQL_HOST")
+hbnb_mysql_db = getenv("HBNB_MYSQL_DB")
+hbnb_type_storage = getenv("HBNB_TYPE_STORAGE")
 
 
 class HBNBCommand(cmd.Cmd):
