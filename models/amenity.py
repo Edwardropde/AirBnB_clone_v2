@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 """Defines amenity class"""
+import os
 from sqlalchemy import String
 from sqlalchemy import Column
 from sqlalchemy.orm import relationship
@@ -19,6 +20,11 @@ class Amenity(BaseModel, Base):
         place_amenities (sqlalchemy relationship): Place-Amenity relationship.
     """
     __tablename__ = "amenities"
-    name = Column(String(128), nullable=False)
-    place_amenities = relationship("Place", secondary="place_amenity",
-            viewonly=False)
+    name = Column(String(128), nullable=False, info={'condition': os.getenv('HBNB_TYPE_STORAGE') == 'db'})
+    
+    def __init__(self, *args, **kwargs):
+        if 'condition' in kwargs:
+            if kwargs['condition']:
+                pass
+            del kwargs['condition']
+        super().__init__(*args, **kwargs)

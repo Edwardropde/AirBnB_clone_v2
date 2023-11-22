@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 """Defines Place Class"""
+import os
 import models
 from os import getenv
 from models.base_model import BaseModel
@@ -15,72 +16,81 @@ from sqlalchemy import Float
 from sqlalchemy import Table
 
 
-association_table = Table("place_amenity", Base.metadata,
-                        Column("place_id", String(60),
-                            ForeignKey("places.id"),
-                            primary_key=True, nullable=False),
-                        Column("amenity_id", String(60),
-                            ForeignKey("amenities.id"),
-                            primary_key=True, nullable=False))
+place_amenity = Table(
+    'place_amenity',
+    Base.metadata,
+    Column(
+        'place_id',
+        String(60),
+        ForeignKey('places.id'),
+        nullable=False,
+        primary_key=True
+    ),
+    Column(
+        'amenity_id',
+        String(60),
+        ForeignKey('amenities.id'),
+        nullable=False,
+        primary_key=True
+    )
+)
+"""
+Represents the many to many relationship table
+between Place and Amenity records.
+"""
 
 
 class Place(BaseModel, Base):
-    """Represents place in MySQL database
-
-    Inherits from SQLAlchemy Base and links to the MySQL table places.
-
-    Attributes:
-        __tablename__ (str): name of MySQL table to store places
-        amenity_ids (list): id list of all linked amenities.
-        amenities (sqlalchemy relationship): place amenities relationship.
-        user_id (sqlalchemy String): Place's user id.
-        reviews (sqlalchemy relationship): place-review relationships
-        name (sqlalchemy String): name
-        longitude (sqlalchemy Float): place's longitude
-        description (sqlalchemy String): description
-        latitude (sqlalchemy Float): place's latitude
-        number_rooms (sqlalchemy Integer): number of rooms.
-        price_by_night (sqlalchemy Integer): price during the night
-        max_guest (sqlalchemy Integer): max number of guests.
-        city_id (sqlalchemy String): place city id.
-        number_bathrooms (sqlalchemy Integer): number of bathrooms.
-    """
-    __tablename__ = "places"
-    amenity_ids = []
-    amenities = relationship("Amenity", secondary="place_amenity",
-                    viewonly=False)
-    user_id = Column(String(60), ForeignKey("users.id"), nullable=False)
-    reviews = relationship("Review", backref="place", cascade="delete")
+    """The Place"""
+    __tablename__ = 'places'
+    city_id = Column(String(60), ForeignKey('cities.id'), nullable=False)
+    user_id = Column(String(60), ForeignKey('users.id'), nullable=False)
     name = Column(String(128), nullable=False)
-    longitude = Column(Float)
-    description = Column(String(1024))
-    latitude = Column(Float)
-    number_rooms = Column(Integer, default=0)
-    price_by_night = Column(Integer, default=0)
-    max_guest = Column(Integer, default=0)
-    city_id = Column(String(60), ForeignKey("cities.id"), nullable=False)
-    number_bathrooms = Column(Integer, default=0)
+    description = Column(String(1024), nullable=True)
+    number_rooms = Column(Integer, nullable=False, default=0)
+    number_bathrooms = Column(Integer, nullable=False, default=0)
+    max_guest = Column(Integer, nullable=False, default=0)
+    price_by_night = Column(Integer, nullable=False, default=0)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    amenity_ids = []
 
-    if getenv("HBNB_TYPE_STORAGE", None) is not "db":
-        @property
-        def reviews(self):
-            """Show list of linked reviews"""
-            reviewlist = []
-            for review in list(models.storage.all(Review).values()):
-                if review.place_id == self.id:
-                    reviewlist.append(review)
-            return reviewlist
-
+    reviews = relationship(
+        'Review',
+        cascade="all, delete, delete-orphan",
+        backref='place'
+    ) if os.getenv('HBNB_TYPE_STORAGE') == 'db' else None
+    if os.getenv('HBNB_TYPE_STORAGE') == 'db':
+        amenities = relationship(
+                'Amenity',
+                secondary=place_amenity,
+                viewonly=False,
+                backref='place_amenities'
+        )
+    else:
         @property
         def amenities(self):
-            """Get and set linked amenities"""
-            amenitylist = []
-            for amenity in list(models.storage.all(Amenity).values()):
-                if amenity.id in self.amenity_ids:
-                    amenitylist.append(amenity)
-            return amenitylist
+            """Returns the amenities of this Place"""
+            from models import storage
+            amenities_of_place = []
+            for value in storage.all(Amenity).values():
+                if value.id in self.amenity_ids:
+                    amenities_of_place.append(value)
+            return amenities_of_place
 
         @amenities.setter
         def amenities(self, value):
+            """Adds an amenity to this Place"""
             if isinstance(value, Amenity):
-                self.amenity_ids.append(value.id)
+                if value.id not in self.amenity_ids:
+                    self.amenity_ids.append(value.id)
+
+        @property
+        def reviews(self):
+            """Returns the reviews of this Place"""
+            from models import storage
+            reviews_of_place = []
+            for value in storage.all(Review).values():
+                if value.place_id == self.id:
+                    reviews_of_place.append(value)
+            return reviews_of_place

@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 """Defines review class"""
+import os
 from models.base_model import BaseModel
 from models.base_model import Base
 from sqlalchemy import Column
@@ -19,6 +20,13 @@ class Review(BaseModel, Base):
         user_id (sqlalchemy String): review's user id
         place_id (sqlalchemy String): review's place ide
     """
-    __tablename__ = "reviews"
-    user_id = Column(String(60), ForeignKey("users.id"), nullable=False)
-    place_id = Column(String(60), ForeignKey("places.id"), nullable=False)
+    __tablename__ = 'reviews'
+    place_id = Column(
+            String(60), ForeignKey('places.id'), nullable=False
+    ) if os.getenv('HBNB_TYPE_STORAGE') == 'db' else ''
+    user_id = Column(
+            String(60), ForeignKey('users.id'), nullable=False
+    ) if os.getenv('HBNB_TYPE_STORAGE') == 'db' else ''
+    text = Column(
+            String(1024), nullable=False
+    ) if os.getenv('HBNB_TYPE_STORAGE') == 'db' else ''

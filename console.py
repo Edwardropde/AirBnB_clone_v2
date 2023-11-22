@@ -1,7 +1,8 @@
 #!/usr/bin/python3
 """Defines HBNB console"""
 import cmd
-from models import storage
+import sys
+import os
 from shlex import split
 from datetime import datetime
 from models.base_model import BaseModel
@@ -13,13 +14,15 @@ from models.place import Place
 from models.review import Review
 from dotenv import load_dotenv
 
+sys.path.append(os.path.abspath('.'))
+
 load_dotenv()
 
-hbnb_mysql_user = getenv("HBNB_MYSQL_USER")
-hbnb_mysql_pwd = getenv("HBNB_MYSQL_PWD")
-hbnb_mysql_host = getenv("HBNB_MYSQL_HOST")
-hbnb_mysql_db = getenv("HBNB_MYSQL_DB")
-hbnb_type_storage = getenv("HBNB_TYPE_STORAGE")
+hbnb_mysql_user = os.getenv("HBNB_MYSQL_USER")
+hbnb_mysql_pwd = os.getenv("HBNB_MYSQL_PWD")
+hbnb_mysql_host = os.getenv("HBNB_MYSQL_HOST")
+hbnb_mysql_db = os.getenv("HBNB_MYSQL_DB")
+hbnb_type_storage = os.getenv("HBNB_TYPE_STORAGE")
 
 
 class HBNBCommand(cmd.Cmd):
@@ -55,30 +58,37 @@ class HBNBCommand(cmd.Cmd):
         """
         try:
             if not line:
-                raise SyntaxError()
-            my_list = line.split(" ")
+                raise SyntaxError("Class name missing")
+            class_name, *key_value_pairs = line.split(" ")
+            if class_name not in self.__classes:
+                raise NameError(f"Class '{class_name}' doesn't exist")
             kwargs = {}
-            for i in range(1, len(my_list)):
-                key, value = tuple(my_list[i].split("="))
+            for pair in key_value_pairs:
+                key, value = pair.split("=")
                 if value[0] == '"':
-                    value = value.strip('"').replace("_", " ")
+                    value = value.strip('"').replace("_", " ").replace('\\"', '"')
                 else:
                     try:
-                        value = eval(value)
-                    except (SyntaxError, NameError):
+                        if "." in value:
+                            value = float(value)
+                        else:
+                            value = int(value)
+                    except (SyntaxError, ValueError):
                         continue
                 kwargs[key] = value
-            if kwargs == {}:
-                obj = eval(my_list[0])()
+            if not kwargs:
+                obj = eval(class_name)()
             else:
-                obj = eval(my_list[0])(**kwargs)
+                obj = eval(class_name)(**kwargs)
                 storage.new(obj)
             print(obj.id)
             obj.save()
-        except SyntaxError:
-            print("** class name missing **")
-        except NameError:
-            print("** class doesn't exist **")
+        except SyntaxError as e:
+            print(f"Error: {e}")
+        except NameError as e:
+            print(f"Error: {e}")
+        except Exception as e:
+            print(f"Error: {e}")
 
     def do_show(self, line):
         """
