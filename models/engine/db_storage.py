@@ -37,6 +37,9 @@ class DBStorage:
                                         pool_pre_ping=True)
         if getenv("HBNB_ENV") == "test":
             Base.metadata.drop_all(self.__engine)
+        Session = scoped_session(sessionmaker(
+            bind=self.__engine, expire_on_commit=False))
+        self.__session = Session()
 
     def all(self, cls=None):
         """
@@ -48,17 +51,14 @@ class DBStorage:
             Dictionary queried classes in the <class name>.<obj id> = obj.
         """
         if cls is None:
-            objs = self.__session.query(State).all()
-            objs.extend(self.__session.query(User).all())
-            objs.extend(self.__session.query(Place).all())
-            objs.extend(self.__session.query(City).all())
-            objs.extend(self.__session.query(Amenity).all())
-            objs.extend(self.__session.query(Review).all())
+            cls_list = [User, State, City, Place, Amenity, Review]
         else:
-            if type(cls) is str:
-                cls = eval(cls)
-            objs = self.__session.query(cls)
-        return {"{}.{}".format(type(o).__name__, o.id): o for o in objs}
+            cls_list = [cls]
+        objs = {}
+        for cl in cls_list:
+            for obj in self.__session.query(cl):
+                objs['{}.{}'.format(type(obj).__name__, obj.id)] = obj
+        return objs
 
     def new(self, obj):
         """Add object to current database session"""
@@ -76,8 +76,8 @@ class DBStorage:
     def reload(self):
         """Creayes all table in database and initialize new session"""
         Base.metadata.create_all(self.__engine)
-        session_factory = sessionmaker(bind=self.__engine,
-                                        expire_on_commit=False)
+        session_factory = sessionmaker(
+                bind=self.__engine, expire_on_commit=False)
         Session = scoped_session(session_factory)
         self.__session = Session()
 
