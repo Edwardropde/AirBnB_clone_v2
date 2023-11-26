@@ -1,32 +1,10 @@
 #!/usr/bin/python3
-"""Defines review class"""
-import os
+""" Review module for the HBNB project """
 from models.base_model import BaseModel
-from models.base_model import Base
-from sqlalchemy import Column
-from sqlalchemy.orm import relationship
-from sqlalchemy import String
-from sqlalchemy import ForeignKey
 
 
-class Review(BaseModel, Base):
-    """
-    Represents review of MySQL database
-
-    Inherits from SQLAlchemy Base, connects to MySQL table reviews
-
-    Atributes:
-        __tablename__ (str): name of Mysql table to store reviews
-        user_id (sqlalchemy String): review's user id
-        place_id (sqlalchemy String): review's place ide
-    """
-    __tablename__ = 'reviews'
-    place_id = Column(
-            String(60), ForeignKey('places.id'), nullable=False
-    ) if os.getenv('HBNB_TYPE_STORAGE') == 'db' else ''
-    user_id = Column(
-            String(60), ForeignKey('users.id'), nullable=False
-    ) if os.getenv('HBNB_TYPE_STORAGE') == 'db' else ''
-    text = Column(
-            String(1024), nullable=False
-    ) if os.getenv('HBNB_TYPE_STORAGE') == 'db' else ''
+class Review(BaseModel):
+    """ Review classto store review information """
+    place_id = ""
+    user_id = ""
+    text = ""
