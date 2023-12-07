@@ -4,44 +4,49 @@
 This Fabric script deploys web static content to remote servers.
 """
 
-from fabric.api import env, put, run
-from os.path import exists
+from fabric.api import task, local, env, put, run
+from datetime import datetime
 import os
 
 # Define the remote hosts
 env.hosts = ['54.152.172.171', '52.72.13.152']
 
 
+@task
+def do_pack():
+    """
+    sudo fab -f 1-pack_web_static.py do_pack
+    """
+    formatted_dt = datetime.now().strftime('%Y%m%d%H%M%S')
+    mkdir = "mkdir -p versions"
+    path = "versions/web_static_{}.tgz".format(formatted_dt)
+    print("Packing web_static to {}".format(path))
+    if local("{} && tar -cvzf {} web_static".format(mkdir, path)).succeeded:
+        return path
+    return None
+
+
+@task
 def do_deploy(archive_path):
     """
-    Function deploys an archive to the web servers.
-
-    :param archive_path: The path to the archive to be deployed.
-    :type archive_path: str
-    :return: True if successful, False otherwise.
-    :rtype: bool
+    fab -f 2-do_deploy_web_static.py do_deploy:
     """
-    if not exists(archive_path):
-        return False
-
-    archive_name = os.path.basename(archive_path)
-    archive_name_no_ext = os.path.splitext(archive_name)[0]
-
     try:
+        if not os.path.exists(archive_path):
+            return False
+        fn_with_ext = os.path.basename(archive_path)
+        fn_no_ext, ext = os.path.splitext(fn_with_ext)
+        dpath = "/data/web_static/releases/"
         put(archive_path, "/tmp/")
-        run("sudo mkdir -p /data/web_static/releases/{}/"
-                .format(archive_name_no_ext))
-        run("sudo tar -xzf /tmp/{} -C /data/web_static/releases/{}/"
-                .format(archive_name, archive_name_no_ext))
-        run("sudo rm /tmp/{}".format(archive_name))
-        run("sudo mv /data/web_static/releases/{}/web_static/* \
-                /data/web_static/releases/{}/"
-                .format(archive_name_no_ext, archive_name_no_ext))
-        run("sudo rm -rf /data/web_static/releases/{}/web_static"
-                .format(archive_name_no_ext))
-        run("sudo rm -rf /data/web_static/current")
-        run("sudo ln -s /data/web_static/releases/{}/ \
-                /data/web_static/current".format(archive_name_no_ext))
+        run("rm -rf {}{}/".format(dpath, fn_no_ext))
+        run("mkdir -p {}{}/".format(dpath, fn_no_ext))
+        run("tar -xzf /tmp/{} -C {}{}/".format(fn_with_ext, dpath, fn_no_ext))
+        run("rm /tmp/{}".format(fn_with_ext))
+        run("mv {0}{1}/web_static/* {0}{1}/".format(dpath, fn_no_ext))
+        run("rm -rf {}{}/web_static".format(dpath, fn_no_ext))
+        run("rm -rf /data/web_static/current")
+        run("ln -s {}{}/ /data/web_static/current".format(dpath, fn_no_ext))
+        print("New version deployed!")
         return True
-    except Exception as e:
+    except Exception:
         return False
