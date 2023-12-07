@@ -1,38 +1,27 @@
 #!/usr/bin/env bash
 # Sets up a web server for deployment of web_static.
 
+# Install Nginx if not already installed
+sudo apt-get update
+sudo apt-get -y install nginx
 
-trap 'exit 0' ERR
+# Create necessary folders and files
+sudo mkdir -p /data/web_static/releases/test/
+sudo mkdir -p /data/web_static/shared/
+echo "<html><head></head><body>Holberton School</body></html>" | sudo tee /data/web_static/releases/test/index.html
 
-if ! command -v nginx &> /dev/null; then
-	sudo apt update
-	sudo apt install nginx -y
-fi
-sudo mkdir -p "/data/web_static/releases/test/"
-sudo mkdir -p "/data/web_static/shared/"
+# Create symbolic link
+sudo rm -rf /data/web_static/current
+sudo ln -s /data/web_static/releases/test/ /data/web_static/current
 
-body_content="Holberton School Web site under construction!"
-current_date=$(date +"%Y-%m-%d %H:%M:%S")
-html_content="<html>
-  <head></head>
-  <body>$body_content</body>
-  <p>Generated on: $current_date</p>
-</html>"
-
-echo "$html_content" | sudo tee /data/web_static/releases/test/index.html > /dev/null
-
-rm -rf /data/web_static/current
-ln -sf /data/web_static/releases/test/ /data/web_static/current
-
+# Give ownership of the /data/ folder to the ubuntu user AND group
 sudo chown -R ubuntu:ubuntu /data/
 
-sudo wget -q -O /etc/nginx/sites-available/default http://exampleconfig.com/static/raw/nginx/ubuntu20.04/etc/nginx/sites-available/default
-config="/etc/nginx/sites-available/default"
-echo 'Holberton School Hello World!' | sudo tee /var/www/html/index.html > /dev/null
-sudo sed -i '/^}$/i \ \n\tlocation \/redirect_me {return 301 https:\/\/www.youtube.com\/watch?v=QH2-TGUlwu4;}' $config
-sudo sed -i '/^}$/i \ \n\tlocation @404 {return 404 "Ceci n'\''est pas une page\\n";}' $config
-sudo sed -i 's/=404/@404/g' $config
-sudo sed -i "/^server {/a \ \tadd_header X-Served-By $HOSTNAME;" $config
-sudo sed -i '/^server {/a \ \n\tlocation \/hbnb_static {alias /data/web_static/current/;index index.html;}' $config
+# Update Nginx configuration
+config_text="location /hbnb_static {\n\t\talias /data/web_static/current/;\n\t}\n"
+sudo sed -i "/^\s*server\s*{/a $config_text" /etc/nginx/sites-available/default
 
+# Restart Nginx
 sudo service nginx restart
+
+exit 0
