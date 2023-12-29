@@ -25,18 +25,18 @@ class FileStorage:
                     my_dict[key] = value
         else:
             my_dict = self.__objects
-            return my_dict        
+        return my_dict        
 
     def new(self, obj):
         """Adds new object to storage dictionary"""
-        self.all().update({obj.to_dict()['__class__'] + '.' + obj.id: obj})
+        key = "{}.{}".format(type(obj).__name__, obj.id)
+        self.__objects[key] = obj
 
     def save(self):
         """Saves storage dictionary to file"""
         with open(FileStorage.__file_path, 'w') as f:
             temp = {}
-            temp.update(FileStorage.__objects)
-            for key, val in temp.items():
+            for key, val in self.__objects.items():
                 temp[key] = val.to_dict()
             json.dump(temp, f)
 
@@ -56,11 +56,10 @@ class FileStorage:
                     'Review': Review
                   }
         try:
-            temp = {}
             with open(FileStorage.__file_path, 'r') as f:
                 temp = json.load(f)
                 for key, val in temp.items():
-                    self.all()[key] = classes[val['__class__']](**val)
+                    self.__objects[key] = classes[val['__class__']](**val)
         except FileNotFoundError:
             pass
 
@@ -69,5 +68,9 @@ class FileStorage:
         if obj:
             key = "{}.{}".format(type(obj).__name__, obj.id)
             if key in self.__objects:
-                del(self.__objects[key])
+                del self.__objects[key]
                 self.save()
+
+    def close(self):
+        """Call reload() to deserialize the JSON file to objects"""
+        self.reload()

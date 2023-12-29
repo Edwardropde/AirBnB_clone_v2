@@ -46,18 +46,21 @@ class DBStorage:
         Return:
             Dict of queried classes in '<class name>.<obj id> = obj' format
         """
-        if cls is None:
-            objs = self.__session.query(State).all()
-            objs.extend(self.__session.query(City).all())
-            objs.extend(self.__session.query(User).all())
-            objs.extend(self.__session.query(Place).all())
-            objs.extend(self.__session.query(Review).all())
-            objs.extend(self.__session.query(Amenity).all())
-        else:
-            if type(cls) == str:
-                cls = eval(cls)
-            objs = self.__session.query(cls)
-        return {"{}.{}".format(type(o).__name__, o.id): o for o in objs}
+        try:
+            if cls is None:
+                all_objs = []
+                for model_class in [State, City, User, Place, Review, Amenity]:
+                    objs = self.__session.query(model_class).all()
+                    all_objs.extend(objs)
+            else:
+                if type(cls) == str:
+                    cls = eval(cls)
+                all_objs = self.__session.query(cls).all()
+            result_dict = {"{}.{}".format(type(o).__name__, o.id): o for o in all_objs}
+            return result_dict
+        except Exception as e:
+            print(f"Error in all method: {e}")
+            return {}
 
     def new(self, obj):
         """Add object to current database session"""
@@ -79,6 +82,12 @@ class DBStorage:
                                        expire_on_commit=False)
         Session = scoped_session(session_factory)
         self.__session = Session()
+        for model_class in [State, City, User, Place, Review, Amenity]:
+            query = self.__session.query(model_class).all()
+            for obj in query:
+                key = "{}.{}".format(type(obj).__name__, obj.id)
+                self.__objects[key] = obj
+        self.__session.close()
 
     def close(self):
         """Close working SQLAlchemy session"""
