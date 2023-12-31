@@ -9,12 +9,14 @@ Routes:
 from models import storage
 from flask import Flask
 from flask import render_template
+from models.state import State
+
 
 app = Flask(__name__)
 
 
 @app.route("/states", strict_slashes=False)
-def states():
+def state():
     """
     Displays HTML page with list of states
     States sorted by name
@@ -24,7 +26,7 @@ def states():
 
 
 @app.route("/states/<id>", strict_slashes=False)
-def states_id(id):
+def state_by_id(id):
     """
     Displays HTML page with infor on <id> if it exists
     """
@@ -35,7 +37,7 @@ def states_id(id):
 
 
 @app.teardown_appcontext
-def teardown(exc):
+def close(self):
     """Remove current SQLAlchemy session"""
     storage.close()
 
