@@ -20,18 +20,15 @@ class State(BaseModel, Base):
         cities (sqlalchemy relationship): state city connection
     """
     __tablename__ = "states"
-    if models.hbnb_type_storage == 'db':
-        name = Column(String(128), nullable=False)
-        cities = relationship("City", cascade="all, delete", backref="states")
-    else:
-        name = ''
-
+    name = Column(String(128), nullable=False)
+    cities = relationship("City", cascade="all, delete", backref="states")
+    
+    if getenv("HBNB_TYPE_STORAGE") != "db":
     @property
     def cities(self):
         """Get list of related city objects"""
-        _cities = []
-        cities = models.storage.all(City)
-        for city in cities.values():
+        city_list = []
+        for city in list(models.storage.all(City).values()):
             if city.state_id == self.id:
-                _cities.append(city)
-        return _cities
+                city_list.append(city)
+        return city_list
