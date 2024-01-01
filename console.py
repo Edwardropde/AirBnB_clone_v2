@@ -5,8 +5,6 @@ import sys
 import re
 import shlex
 import json
-import os
-import uuid
 from shlex import split
 from models.base_model import BaseModel
 from models.__init__ import storage
@@ -79,7 +77,7 @@ class HBNBCommand(cmd.Cmd):
                 pline = pline[2].strip()  # pline is now str
                 if pline:
                     # check for *args or **kwargs
-                    if pline[0] == '{' and pline[-1] == '}'\
+                    if pline[0] is '{' and pline[-1] is '}'\
                             and type(eval(pline)) is dict:
                         _args = pline
                     else:
@@ -224,11 +222,11 @@ class HBNBCommand(cmd.Cmd):
             if args not in HBNBCommand.classes:
                 print("** class doesn't exist **")
                 return
-            for k, v in storage.all().items():
+            for k, v in storage._FileStorage__objects.items():
                 if k.split('.')[0] == args:
                     print_list.append(str(v))
         else:
-            for k, v in storage.all().items():
+            for k, v in storage._FileStorage__objects.items():
                 print_list.append(str(v))
 
         print(print_list)

@@ -24,11 +24,11 @@ class State(BaseModel, Base):
     cities = relationship("City", cascade="all, delete", backref="states")
     
     if getenv("HBNB_TYPE_STORAGE") != "db":
-    @property
-    def cities(self):
-        """Get list of related city objects"""
-        city_list = []
-        for city in list(models.storage.all(City).values()):
-            if city.state_id == self.id:
-                city_list.append(city)
-        return city_list
+        @property
+        def cities(self):
+            """Get list of related city objects"""
+            city_list = []
+            for city in list(models.storage.all(City).values()):
+                if city.state_id == self.id:
+                    city_list.append(city)
+            return city_list
