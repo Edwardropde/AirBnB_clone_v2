@@ -2,6 +2,7 @@
 """ State Module for HBNB project """
 from models.base_model import Base
 from models.base_model import BaseModel
+from models import hbnb_type_storage
 from sqlalchemy import String
 from sqlalchemy import Column
 from sqlalchemy.orm import relationship
@@ -18,6 +19,9 @@ class Amenity(BaseModel, Base):
         place_amenities (sqlalchemy relationship): Place-Amenity relationship
     """
     __tablename__ = "amenities"
-    name = Column(String(128), nullable=False)
-    place_amenities = relationship("Place", secondary="place_amenity",
-                                   viewonly=False)
+    if hbnb_type_storage == 'db':
+        name = Column(String(128), nullable=False)
+        place_amenities = relationship("Place", secondary="place_amenity",
+                                        viewonly=False)
+    else:
+        name = ""
